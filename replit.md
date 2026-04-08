@@ -55,6 +55,11 @@ See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and pa
 - **Address**: Near DPS Play School, Near Dr Manoj Jain, Jawahar Ganj Railway Road, Hapur - 245101, Shivpuri area
 - **Classes**: XI, XII, JEE/NEET
 
+### Vercel Deployment Files
+- `vercel.json` — build config and routing rules
+- `api/index.ts` — Vercel serverless entry point wrapping the Express app
+- `.vercelignore` — files excluded from Vercel upload
+
 ### DB Schema
 - `notes` table: id, title, description, file_url, file_name, created_at, updated_at
 

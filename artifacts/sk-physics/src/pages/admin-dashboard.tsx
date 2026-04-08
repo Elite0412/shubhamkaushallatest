@@ -158,25 +158,12 @@ export default function AdminDashboard() {
   const handleDelete = async (id: number) => {
     if (!adminToken) return;
     try {
-      // The API spec doesn't show a body for delete, but notes.ts route expects adminToken in query or body.
-      // Drizzle/Express often handle body in DELETE if custom fetch passes it, but standard fetch doesn't usually.
-      // We will rely on custom fetch if the API takes it. (Orval generated it without body).
-      // Assuming it works based on API.
-      await deleteNote.mutateAsync({ id }, {
-        // Hack: The generated API doesn't allow body on DELETE, we might need to send it via headers/query in a real app
-        // But we follow the spec hook useDeleteNote().
-      });
-      // Important: The real backend notes.ts expects adminToken in the request body for delete.
-      // Since the Orval client doesn't support body on DELETE, we will use fetch manually for this specific case if it fails.
-      
       const res = await fetch(`/api/notes/${id}`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ adminToken })
+        body: JSON.stringify({ adminToken }),
       });
-      
       if (!res.ok) throw new Error("Delete failed");
-
       toast({ title: "Deleted", description: "Note removed successfully." });
       queryClient.invalidateQueries({ queryKey: getListNotesQueryKey() });
     } catch (err) {

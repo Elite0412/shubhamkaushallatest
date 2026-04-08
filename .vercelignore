@@ -1,0 +1,6 @@
+node_modules
+artifacts/api-server/dist
+artifacts/sk-physics/dist
+artifacts/mockup-sandbox
+.local
+attached_assets
