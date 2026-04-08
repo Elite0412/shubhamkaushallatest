@@ -1,15 +1,16 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: SK Physics API specification
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: notes
+    description: Physics notes management
 paths:
   /healthz:
     get:
@@ -24,6 +25,145 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /notes:
+    get:
+      operationId: listNotes
+      tags: [notes]
+      summary: List all notes
+      description: Returns all available physics notes
+      responses:
+        "200":
+          description: List of notes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Note"
+    post:
+      operationId: createNote
+      tags: [notes]
+      summary: Create a new note
+      description: Upload a new physics note (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateNoteBody"
+      responses:
+        "201":
+          description: Note created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Note"
+        "401":
+          description: Unauthorized
+  /notes/{id}:
+    get:
+      operationId: getNote
+      tags: [notes]
+      summary: Get a specific note
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Note details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Note"
+        "404":
+          description: Not found
+    put:
+      operationId: updateNote
+      tags: [notes]
+      summary: Update a note
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateNoteBody"
+      responses:
+        "200":
+          description: Note updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Note"
+        "401":
+          description: Unauthorized
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteNote
+      tags: [notes]
+      summary: Delete a note
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted successfully
+        "401":
+          description: Unauthorized
+        "404":
+          description: Not found
+  /admin/login:
+    post:
+      operationId: adminLogin
+      tags: [notes]
+      summary: Admin login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminLoginBody"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminLoginResponse"
+        "401":
+          description: Unauthorized
+  /admin/upload-url:
+    post:
+      operationId: getUploadUrl
+      tags: [notes]
+      summary: Get a signed upload URL for PDF
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UploadUrlBody"
+      responses:
+        "200":
+          description: Upload URL
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UploadUrlResponse"
+        "401":
+          description: Unauthorized
 components:
   schemas:
     HealthStatus:
@@ -33,4 +173,97 @@ components:
           type: string
       required:
         - status
-
+    Note:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        fileUrl:
+          type: string
+        fileName:
+          type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - title
+        - description
+        - fileUrl
+        - fileName
+        - createdAt
+        - updatedAt
+    CreateNoteBody:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        fileUrl:
+          type: string
+        fileName:
+          type: string
+        adminToken:
+          type: string
+      required:
+        - title
+        - description
+        - fileUrl
+        - fileName
+        - adminToken
+    UpdateNoteBody:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        adminToken:
+          type: string
+      required:
+        - title
+        - description
+        - adminToken
+    AdminLoginBody:
+      type: object
+      properties:
+        password:
+          type: string
+      required:
+        - password
+    AdminLoginResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        success:
+          type: boolean
+      required:
+        - token
+        - success
+    UploadUrlBody:
+      type: object
+      properties:
+        fileName:
+          type: string
+        adminToken:
+          type: string
+      required:
+        - fileName
+        - adminToken
+    UploadUrlResponse:
+      type: object
+      properties:
+        uploadUrl:
+          type: string
+        fileUrl:
+          type: string
+      required:
+        - uploadUrl
+        - fileUrl

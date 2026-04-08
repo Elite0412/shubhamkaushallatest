@@ -1,0 +1,8 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "lLf4TlK3utDH7WDVjrAbE"
+uri = "file://artifacts/sk-physics/src/assets/hero.png"
+type = "image"
+title = "Physics class hero image"
