@@ -35,6 +35,7 @@ router.post("/admin/login", async (req, res): Promise<void> => {
   res.json({ token: ADMIN_TOKEN, success: true });
 });
 
+
 router.post("/admin/upload-url", async (req, res): Promise<void> => {
   const parsed = GetUploadUrlBody.safeParse(req.body);
   if (!parsed.success) {
@@ -47,23 +48,57 @@ router.post("/admin/upload-url", async (req, res): Promise<void> => {
     return;
   }
 
-  const blobToken = process.env.BLOB_READ_WRITE_TOKEN;
-  if (!blobToken) {
-    req.log.warn("BLOB_READ_WRITE_TOKEN not configured, using file URL placeholder");
-    const fileUrl = `https://placeholder.blob.vercel-storage.com/${Date.now()}-${parsed.data.fileName}`;
-    res.json({ uploadUrl: fileUrl, fileUrl });
+  const uploadthingToken = process.env.UPLOADTHING_TOKEN;
+  if (!uploadthingToken) {
+    res.status(500).json({ error: "UPLOADTHING_TOKEN is not configured" });
     return;
   }
 
   try {
-    const { put } = await import("@vercel/blob");
-    const blob = await put(parsed.data.fileName, Buffer.alloc(0), {
-      access: "public",
-      token: blobToken,
+    const response = await fetch("https://api.uploadthing.com/v7/prepareUpload", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Uploadthing-Api-Key": uploadthingToken,
+        "x-uploadthing-version": "7.7.4",
+      },
+      body: JSON.stringify({
+        fileName: parsed.data.fileName,
+        fileType: "application/pdf",
+        acl: "public-read",
+      }),
     });
-    res.json({ uploadUrl: blob.url, fileUrl: blob.url });
+
+    if (!response.ok) {
+      const message = await response.text();
+      req.log.error({ status: response.status, message }, "UploadThing prepareUpload failed");
+      res.status(500).json({ error: "Failed to prepare UploadThing upload" });
+      return;
+    }
+
+    const payload = await response.json() as Record<string, unknown> | Array<Record<string, unknown>>;
+    const first = Array.isArray(payload)
+      ? payload[0]
+      : Array.isArray(payload?.data)
+        ? (payload.data[0] as Record<string, unknown> | undefined)
+        : payload;
+
+    const uploadUrl = typeof first?.url === "string" ? first.url : undefined;
+    const fileUrl = typeof first?.fileUrl === "string"
+      ? first.fileUrl
+      : typeof first?.ufsUrl === "string"
+        ? first.ufsUrl
+        : undefined;
+
+    if (!uploadUrl || !fileUrl) {
+      req.log.error({ payload }, "UploadThing prepareUpload returned unexpected payload");
+      res.status(500).json({ error: "Invalid UploadThing response" });
+      return;
+    }
+
+    res.json({ uploadUrl, fileUrl });
   } catch (err) {
-    req.log.error({ err }, "Failed to generate upload URL");
+    req.log.error({ err }, "Failed to generate UploadThing upload URL");
     res.status(500).json({ error: "Failed to generate upload URL" });
   }
 });

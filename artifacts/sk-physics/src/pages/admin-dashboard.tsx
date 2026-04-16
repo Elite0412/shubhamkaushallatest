@@ -95,12 +95,10 @@ export default function AdminDashboard() {
       let finalFileName = fileMode === "upload" && selectedFile ? selectedFile.name : (fileUrl.split('/').pop() || "note.pdf");
 
       if (fileMode === "upload" && selectedFile) {
-        // Get upload URL
         const uploadRes = await getUploadUrl.mutateAsync({
           data: { fileName: selectedFile.name, adminToken }
         });
 
-        // Upload to S3/R2 via pre-signed URL
         await fetch(uploadRes.uploadUrl, {
           method: "PUT",
           body: selectedFile,
