@@ -8,7 +8,6 @@ import {
   GetNoteParams,
   DeleteNoteParams,
   AdminLoginBody,
-  GetUploadUrlBody,
 } from "@workspace/api-zod";
 
 const router: IRouter = Router();
@@ -33,39 +32,6 @@ router.post("/admin/login", async (req, res): Promise<void> => {
   }
 
   res.json({ token: ADMIN_TOKEN, success: true });
-});
-
-router.post("/admin/upload-url", async (req, res): Promise<void> => {
-  const parsed = GetUploadUrlBody.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: "Invalid request" });
-    return;
-  }
-
-  if (!verifyAdminToken(parsed.data.adminToken)) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
-
-  const blobToken = process.env.BLOB_READ_WRITE_TOKEN;
-  if (!blobToken) {
-    req.log.warn("BLOB_READ_WRITE_TOKEN not configured, using file URL placeholder");
-    const fileUrl = `https://placeholder.blob.vercel-storage.com/${Date.now()}-${parsed.data.fileName}`;
-    res.json({ uploadUrl: fileUrl, fileUrl });
-    return;
-  }
-
-  try {
-    const { put } = await import("@vercel/blob");
-    const blob = await put(parsed.data.fileName, Buffer.alloc(0), {
-      access: "public",
-      token: blobToken,
-    });
-    res.json({ uploadUrl: blob.url, fileUrl: blob.url });
-  } catch (err) {
-    req.log.error({ err }, "Failed to generate upload URL");
-    res.status(500).json({ error: "Failed to generate upload URL" });
-  }
 });
 
 router.get("/notes", async (_req, res): Promise<void> => {
